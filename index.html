@@ -9,27 +9,36 @@
         body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', serif; overflow: hidden; user-select: none; }
         #game-arena { position: relative; width: 100vw; height: 100vh; background: radial-gradient(circle, #001529, #000); overflow: hidden; }
         
+        /* 共通：スプライト画像の設定 */
+        .char-sprite {
+            background-image: url('chars.jpg'); /* ここにアップロードした画像名 */
+            background-size: 400% 200%; /* 4列 2行 */
+            background-repeat: no-repeat;
+            display: inline-block;
+        }
+
+        /* セレクト画面 */
+        #menu { position: absolute; z-index: 100; text-align: center; background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--gold); width: 85%; max-width: 450px; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+        .card { width: 100%; aspect-ratio: 1/1.2; border: 1px solid #444; cursor: pointer; background: #111; overflow: hidden; position: relative; transition: 0.2s; }
+        .card:hover { border-color: var(--gold); transform: scale(1.05); }
+        .card .char-sprite { width: 100%; height: 100%; transform: scale(1.2); }
+
+        /* バトル画面 */
+        #battle { display: none; width: 100%; height: 100%; position: relative; }
+        .fighter { position: absolute; bottom: 15%; width: 220px; height: 320px; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.2); z-index: 5; background-size: 400% 200%; }
+        #p-img { left: -70%; transform: scale(1.5); }
+        #e-img { right: -70%; transform: scale(1.5) scaleX(-1); }
+
+        /* 演出 */
+        #signal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--red); text-shadow: 0 0 30px #fff; display: none; z-index: 50; font-weight: bold; }
+        #hud { position: absolute; top: 10px; width: 100%; text-align: center; color: var(--gold); z-index: 10; font-size: 20px; font-weight: bold; text-shadow: 0 0 5px #000; }
+        #result-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 2px solid var(--gold); padding: 30px; text-align: center; display: none; z-index: 200; width: 80%; }
+        .btn { background: var(--red); color: #fff; padding: 12px 30px; border: none; cursor: pointer; margin-top: 20px; font-weight: bold; font-size: 18px; }
+
         /* 桜吹雪 */
         .sakura { position: absolute; background: #ffb7c5; border-radius: 50% 0 50% 50%; pointer-events: none; animation: fall linear infinite; z-index: 1; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
-
-        /* メニュー */
-        #menu { position: absolute; z-index: 100; text-align: center; background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--gold); width: 85%; max-width: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 20px 0; }
-        .card { aspect-ratio: 2/3; border: 1px solid #444; cursor: pointer; background: #111; overflow: hidden; position: relative; }
-        .card:active { transform: scale(0.95); border-color: var(--gold); }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* バトル */
-        #battle { display: none; width: 100%; height: 100%; position: relative; }
-        .fighter { position: absolute; bottom: 10%; width: 60%; max-width: 350px; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.2); }
-        #p-img { left: -70%; }
-        #e-img { right: -70%; transform: scaleX(-1); }
-
-        #signal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; color: var(--red); text-shadow: 0 0 20px #fff; display: none; z-index: 50; font-weight: bold; }
-        #hud { position: absolute; top: 10px; width: 100%; text-align: center; color: var(--gold); z-index: 10; font-weight: bold; }
-        #result-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 2px solid var(--gold); padding: 30px; text-align: center; display: none; z-index: 200; width: 80%; }
-        .btn { background: var(--red); color: #fff; padding: 10px 20px; border: none; cursor: pointer; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -38,53 +47,41 @@
     <div id="hud">STREAK: <span id="streak">0</span></div>
 
     <div id="menu">
-        <h2 style="color: var(--gold); margin:0;">ZAN: CLAN WARS</h2>
-        <p style="font-size: 12px; color: #888;">TAP TO START & UNMUTE</p>
+        <h2 style="color: var(--gold); margin:0; letter-spacing: 2px;">ZAN: CLAN WARS</h2>
+        <p style="font-size: 11px; color: #888;">SELECT YOUR WARRIOR & TAP TO START</p>
         <div class="grid" id="char-grid"></div>
     </div>
 
     <div id="battle">
-        <img id="p-img" class="fighter" src="" alt="Player">
-        <img id="e-img" class="fighter" src="" alt="Enemy">
+        <div id="p-img" class="fighter char-sprite"></div>
+        <div id="e-img" class="fighter char-sprite"></div>
         <div id="signal">斬</div>
     </div>
 
     <div id="result-modal">
         <div id="res-msg"></div>
-        <div id="res-time" style="color: var(--gold); margin: 10px 0;"></div>
+        <div id="res-time" style="color: var(--gold); margin: 15px 0; font-size: 24px;"></div>
         <button class="btn" onclick="location.reload()">NEXT MATCH</button>
     </div>
 </div>
 
 <script>
-    // キャラ画像URL（安定したリンクへ更新）
-    const images = [
-        "https://images.unsplash.com/photo-1599408162172-7a425f696939?w=300", // Ninja
-        "https://images.unsplash.com/photo-1528164344705-4754268799bc?w=300", // Samurai 1
-        "https://images.unsplash.com/photo-1582233221916-c92330f69904?w=300", // Kimono
-        "https://images.unsplash.com/photo-1605335198031-18e7e3760205?w=300", // Katana
-        "https://images.unsplash.com/photo-1533050487297-09b450131914?w=300", // Cyber 1
-        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300", // Lantern
-        "https://images.unsplash.com/photo-1545466033-7e4524453155?w=300", // Dojo
-        "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?w=300"  // Sakura
+    // 集合絵の座標マップ (4x2のグリッド)
+    const spriteMap = [
+        {x: '0%', y: '0%'}, {x: '33.3%', y: '0%'}, {x: '66.6%', y: '0%'}, {x: '100%', y: '0%'},
+        {x: '0%', y: '100%'}, {x: '33.3%', y: '100%'}, {x: '66.6%', y: '100%'}, {x: '100%', y: '100%'}
     ];
 
-    // 音源（確実に再生されるパブリックなもの）
     const sDraw = new Audio("https://www.soundjay.com/misc/sounds/sword-drawn-1.mp3");
     const sSlash = new Audio("https://www.soundjay.com/misc/sounds/sword-clash-1.mp3");
     const sWin = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
 
-    // iOS/Android向け：画面クリック時に音声を「解禁」する
     function initAudio() {
-        sDraw.play().then(()=>sDraw.pause());
-        sSlash.play().then(()=>sSlash.pause());
-        sWin.play().then(()=>sWin.pause());
+        [sDraw, sSlash, sWin].forEach(s => { s.play().then(()=>s.pause()).catch(()=>{}); });
     }
 
-    let streak = 0, startTime, canZan = false, gameActive = false;
-
     // 桜吹雪
-    for(let i=0; i<15; i++){
+    for(let i=0; i<20; i++){
         let s = document.createElement('div');
         s.className = 'sakura';
         s.style.left = Math.random()*100+'vw';
@@ -94,24 +91,34 @@
     }
 
     const grid = document.getElementById('char-grid');
-    images.forEach(url => {
+    spriteMap.forEach((pos, i) => {
         let d = document.createElement('div');
         d.className = 'card';
-        d.innerHTML = `<img src="${url}">`;
-        d.onclick = (e) => { e.stopPropagation(); startBattle(url); };
+        d.innerHTML = `<div class="char-sprite" style="background-position: ${pos.x} ${pos.y}"></div>`;
+        d.onclick = (e) => { e.stopPropagation(); startBattle(pos); };
         grid.appendChild(d);
     });
 
-    function startBattle(url) {
+    let streak = parseInt(localStorage.getItem('zanStreak') || 0);
+    document.getElementById('streak').innerText = streak;
+    let startTime, canZan = false, gameActive = false;
+
+    function startBattle(playerPos) {
         document.getElementById('menu').style.display = 'none';
         document.getElementById('battle').style.display = 'block';
-        document.getElementById('p-img').src = url;
-        document.getElementById('e-img').src = images[Math.floor(Math.random()*images.length)];
+        
+        const pImg = document.getElementById('p-img');
+        const eImg = document.getElementById('e-img');
+        const enemyPos = spriteMap[Math.floor(Math.random()*8)];
+
+        pImg.style.backgroundPosition = `${playerPos.x} ${playerPos.y}`;
+        eImg.style.backgroundPosition = `${enemyPos.x} ${enemyPos.y}`;
+
         gameActive = true;
         
         setTimeout(() => {
-            document.getElementById('p-img').style.left = '5%';
-            document.getElementById('e-img').style.right = '5%';
+            pImg.style.left = '5%';
+            eImg.style.right = '5%';
             sDraw.play();
         }, 300);
 
@@ -120,11 +127,13 @@
             canZan = true;
             startTime = Date.now();
             document.getElementById('signal').style.display = 'block';
-            setTimeout(() => { if(canZan) resolve("CPU"); }, 250);
-        }, Math.random()*2000 + 2000);
+            setTimeout(() => { if(canZan) resolve("CPU"); }, 250); // CPUの反応速度 0.25秒
+        }, Math.random()*2000 + 2500);
     }
 
     document.getElementById('game-arena').onmousedown = handleInput;
+    document.getElementById('game-arena').ontouchstart = (e) => { e.preventDefault(); handleInput(); };
+
     function handleInput() {
         if(!gameActive) return;
         if(canZan) resolve("PLAYER");
@@ -148,13 +157,14 @@
             if(winner === "PLAYER") {
                 streak++;
                 sWin.play();
-                document.getElementById('res-msg').innerHTML = "<h1 style='color:var(--gold)'>VICTORY</h1>";
+                document.getElementById('res-msg').innerHTML = "<h1 style='color:var(--gold); font-size:60px; margin:0;'>VICTORY</h1>";
                 document.getElementById('res-time').innerText = (time/1000).toFixed(3) + "s";
             } else {
                 streak = 0;
-                document.getElementById('res-msg').innerHTML = "<h1>DEFEATED</h1>";
+                document.getElementById('res-msg').innerHTML = "<h1 style='color:#888; margin:0;'>DEFEATED</h1>";
                 document.getElementById('res-time').innerText = winner === "CPU" ? "AI: 0.250s" : "TOO FAST";
             }
+            localStorage.setItem('zanStreak', streak);
             document.getElementById('streak').innerText = streak;
         }, 600);
     }
