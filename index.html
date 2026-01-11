@@ -6,7 +6,7 @@
     <title>ZAN: CLAN WARS - ARENA</title>
     <style>
         :root { --red: #ff4d4d; --gold: #ffd700; --sumi: #050505; }
-        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', serif; overflow: hidden; user-select: none; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         #game-arena { 
             position: relative; width: 100vw; height: 100vh; 
@@ -14,42 +14,36 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* 桜吹雪のエフェクト */
+        /* 桜吹雪（pointer-events: noneでクリックを邪魔しない） */
         .sakura { position: absolute; background: #ffb7c5; border-radius: 50% 0 50% 50%; pointer-events: none; animation: fall linear infinite; z-index: 1; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
 
-        /* キャラ選択画面 */
-        #menu { z-index: 100; text-align: center; background: rgba(0,0,0,0.85); padding: 2rem; border: 3px double var(--gold); }
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
-        .card { width: 80px; height: 120px; border: 1px solid #444; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
-        .card:hover { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 20px var(--gold); }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
+        /* メニュー画面 */
+        #menu { z-index: 100; text-align: center; background: rgba(0,0,0,0.85); padding: 20px; border: 3px double var(--gold); max-width: 90%; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; pointer-events: auto; }
+        .card { width: 70px; height: 100px; border: 2px solid #444; cursor: pointer; transition: 0.2s; position: relative; background: #111; z-index: 110; }
+        .card:active { transform: scale(0.95); border-color: var(--gold); }
+        .card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-        /* バトルレイアウト */
-        #battle { display: none; width: 100%; height: 100%; position: relative; }
-        .fighter { position: absolute; bottom: 15%; width: 45%; max-width: 400px; transition: 0.1s; z-index: 5; }
-        #p-img { left: -50%; transform: scaleX(1); }
-        #e-img { right: -50%; transform: scaleX(-1); }
+        /* バトル画面 */
+        #battle { display: none; width: 100%; height: 100%; position: relative; z-index: 5; }
+        .fighter { position: absolute; bottom: 15%; width: 50%; max-width: 350px; transition: 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+        #p-img { left: -60%; transform: scaleX(1); }
+        #e-img { right: -60%; transform: scaleX(-1); }
 
-        /* 斬演出 */
         #signal { 
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 200px; color: var(--red); text-shadow: 0 0 50px #fff; display: none; z-index: 50;
-            font-weight: 900; font-style: italic;
+            font-size: 120px; color: var(--red); text-shadow: 0 0 30px #fff; display: none; z-index: 50; font-weight: 900;
         }
-        .slash-vfx { position: absolute; width: 200%; height: 10px; background: #fff; top: 50%; left: -50%; transform: rotate(-45deg); display: none; box-shadow: 0 0 30px #fff; z-index: 60; }
 
-        /* UI */
-        #hud { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 24px; color: var(--gold); z-index: 10; text-shadow: 0 0 10px #000; }
+        #hud { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 20px; color: var(--gold); z-index: 10; pointer-events: none; }
         #result-modal { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.95); border: 2px solid var(--gold); padding: 50px; 
-            text-align: center; display: none; z-index: 200; width: 80%;
+            background: rgba(0,0,0,0.95); border: 2px solid var(--gold); padding: 30px; 
+            text-align: center; display: none; z-index: 200; width: 70%; 
         }
-        .btn { background: var(--red); color: white; padding: 15px 40px; border: 2px solid var(--gold); font-size: 20px; cursor: pointer; margin-top: 20px; text-transform: uppercase; font-weight: bold; }
-        
-        .win-txt { font-size: 100px; color: var(--gold); text-shadow: 0 0 30px var(--red); animation: bounce 0.5s infinite alternate; }
-        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
+        .btn { background: var(--red); color: white; padding: 12px 30px; border: 1px solid var(--gold); font-size: 18px; cursor: pointer; margin-top: 15px; }
+        .win-txt { font-size: 60px; color: var(--gold); text-shadow: 0 0 20px var(--red); }
     </style>
 </head>
 <body>
@@ -58,14 +52,12 @@
     <div id="hud">STREAK: <span id="streak">0</span></div>
 
     <div id="menu">
-        <h1 style="color: var(--gold); margin:0;">ZAN: CLAN WARS</h1>
-        <p style="letter-spacing: 3px;">SPATIAL ARENA PRE-RELEASE</p>
+        <h2 style="color: var(--gold); margin:0; letter-spacing: 2px;">ZAN: CLAN WARS</h2>
+        <p style="font-size: 12px; color: #aaa;">SELECT YOUR WARRIOR</p>
         <div class="grid" id="char-grid"></div>
-        <p style="font-size: 12px; color: #888;">BEAT THE AI AT 0.250s REACTION</p>
     </div>
 
     <div id="battle">
-        <div class="slash-vfx" id="vfx"></div>
         <img id="p-img" class="fighter" src="" alt="">
         <img id="e-img" class="fighter" src="" alt="">
         <div id="signal">斬</div>
@@ -73,15 +65,120 @@
 
     <div id="result-modal">
         <div id="res-msg"></div>
-        <div id="res-time" style="font-size: 24px; color: var(--gold); margin: 20px 0;"></div>
-        <button class="btn" onclick="location.reload()">REMATCH</button>
+        <div id="res-time" style="font-size: 20px; color: var(--gold); margin: 10px 0;"></div>
+        <button class="btn" onclick="location.reload()">RETRY</button>
     </div>
 </div>
 
-<audio id="s-draw" src="https://assets.mixkit.co/active_storage/sfx/2006/2006-preview.mp3"></audio>
-<audio id="s-slash" src="https://assets.mixkit.co/active_storage/sfx/1148/1148-preview.mp3"></audio>
-<audio id="s-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
-
 <script>
     const chars = [
-        { name: "NINJA", url: "
+        { url: "https://r.jina.ai/i/61e06497f526487da847b3bc33036499" },
+        { url: "https://r.jina.ai/i/9e00948967914e6685f09199d2543d3b" },
+        { url: "https://r.jina.ai/i/537d80094b8e4b7890638066f3621437" },
+        { url: "https://r.jina.ai/i/f82980c6552a488a9143924976767222" },
+        { url: "https://r.jina.ai/i/9380629729114777a835003639893500" },
+        { url: "https://r.jina.ai/i/9179929853924294b008064953331900" },
+        { url: "https://r.jina.ai/i/52516496294247759325064936332152" },
+        { url: "https://r.jina.ai/i/25026496294241519325064936332152" }
+    ];
+
+    let streak = 0, startTime, canZan = false, gameActive = false;
+
+    // 桜吹雪生成
+    const arena = document.getElementById('game-arena');
+    for(let i=0; i<20; i++){
+        let s = document.createElement('div');
+        s.className = 'sakura';
+        s.style.left = Math.random()*100+'vw';
+        s.style.width = s.style.height = Math.random()*8+4+'px';
+        s.style.animationDuration = Math.random()*3+2+'s';
+        s.style.top = "-10px";
+        arena.appendChild(s);
+    }
+
+    // メニュー生成
+    const grid = document.getElementById('char-grid');
+    chars.forEach((c, index) => {
+        let d = document.createElement('div');
+        d.className = 'card';
+        d.innerHTML = `<img src="${c.url}">`;
+        // タッチとクリック両対応
+        d.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initBattle(c.url);
+        });
+        grid.appendChild(d);
+    });
+
+    function initBattle(url) {
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('battle').style.display = 'block';
+        document.getElementById('p-img').src = url;
+        document.getElementById('e-img').src = chars[Math.floor(Math.random()*chars.length)].url;
+        
+        gameActive = true;
+
+        // 登場アニメーション
+        setTimeout(() => {
+            document.getElementById('p-img').style.left = '5%';
+            document.getElementById('e-img').style.right = '5%';
+        }, 100);
+
+        // 合図までの時間設定
+        setTimeout(startSignal, Math.random()*3000 + 2000);
+    }
+
+    function startSignal() {
+        if(!gameActive) return;
+        canZan = true;
+        startTime = Date.now();
+        document.getElementById('signal').style.display = 'block';
+        // CPU反応 (0.25秒)
+        setTimeout(() => { if(canZan) resolve("CPU"); }, 250);
+    }
+
+    // バトル中のタップ判定
+    arena.addEventListener('mousedown', handleAction);
+    arena.addEventListener('touchstart', (e) => {
+        if(gameActive) {
+            e.preventDefault();
+            handleAction();
+        }
+    });
+
+    function handleAction() {
+        if(!gameActive) return;
+        if(canZan) resolve("PLAYER");
+        else if(document.getElementById('battle').style.display === 'block') resolve("EARLY");
+    }
+
+    function resolve(winner) {
+        canZan = false;
+        gameActive = false;
+        const time = Date.now() - startTime;
+        document.getElementById('signal').style.display = 'none';
+        
+        if(winner !== "EARLY") {
+            // 斬撃後の位置移動
+            document.getElementById('p-img').style.left = '60%';
+            document.getElementById('e-img').style.right = '60%';
+        }
+
+        setTimeout(() => {
+            const modal = document.getElementById('result-modal');
+            modal.style.display = 'block';
+            if(winner === "PLAYER") {
+                streak++;
+                document.getElementById('res-msg').innerHTML = "<div class='win-txt'>VICTORY</div>";
+                document.getElementById('res-time').innerText = `SPEED: ${(time/1000).toFixed(3)}s`;
+            } else {
+                streak = 0;
+                document.getElementById('res-msg').innerHTML = `<div style='font-size:40px; color:#888;'>${winner === "EARLY" ? "TOO EARLY" : "DEFEATED"}</div>`;
+                document.getElementById('res-time').innerText = winner === "CPU" ? "AI REACTION: 0.250s" : "WAIT FOR SIGNAL";
+            }
+            document.getElementById('streak').innerText = streak;
+        }, 500);
+    }
+</script>
+</body>
+</html>
