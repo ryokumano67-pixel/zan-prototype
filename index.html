@@ -2,136 +2,86 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAN: CLAN WARS Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZAN: CLAN WARS - ARENA</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        #game-container { position: relative; width: 100%; max-width: 600px; height: 80vh; border: 2px solid #333; overflow: hidden; background: linear-gradient(to bottom, #001, #003); }
-        #ui-layer { position: absolute; top: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        .character { position: absolute; bottom: 10%; width: 120px; height: 200px; background: #555; transition: transform 0.1s; }
-        #player { left: 10%; border-left: 5px solid #0af; }
-        #enemy { right: 10%; border-right: 5px solid #f05; }
-        #signal { font-size: 80px; color: #f00; display: none; text-shadow: 0 0 20px #f00; font-weight: bold; }
-        #result { font-size: 40px; text-align: center; display: none; }
-        .flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; }
-        .zan-text { font-size: 120px; color: #f00; text-shadow: 0 0 30px #ff0; animation: slash 0.3s ease-out; }
-        @keyframes slash { 0% { transform: scale(5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        button { padding: 15px 30px; font-size: 20px; background: #c00; color: #fff; border: none; cursor: pointer; pointer-events: auto; }
-        #char-select { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px; pointer-events: auto; }
-        .char-box { width: 60px; height: 60px; background: #333; border: 2px solid #666; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-        .char-box:hover { border-color: #f00; }
+        :root { --red: #ff4d4d; --gold: #ffd700; --sumi: #050505; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', serif; overflow: hidden; user-select: none; }
+        
+        #game-arena { 
+            position: relative; width: 100vw; height: 100vh; 
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 桜吹雪のエフェクト */
+        .sakura { position: absolute; background: #ffb7c5; border-radius: 50% 0 50% 50%; pointer-events: none; animation: fall linear infinite; z-index: 1; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+
+        /* キャラ選択画面 */
+        #menu { z-index: 100; text-align: center; background: rgba(0,0,0,0.85); padding: 2rem; border: 3px double var(--gold); }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+        .card { width: 80px; height: 120px; border: 1px solid #444; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 20px var(--gold); }
+        .card img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* バトルレイアウト */
+        #battle { display: none; width: 100%; height: 100%; position: relative; }
+        .fighter { position: absolute; bottom: 15%; width: 45%; max-width: 400px; transition: 0.1s; z-index: 5; }
+        #p-img { left: -50%; transform: scaleX(1); }
+        #e-img { right: -50%; transform: scaleX(-1); }
+
+        /* 斬演出 */
+        #signal { 
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 200px; color: var(--red); text-shadow: 0 0 50px #fff; display: none; z-index: 50;
+            font-weight: 900; font-style: italic;
+        }
+        .slash-vfx { position: absolute; width: 200%; height: 10px; background: #fff; top: 50%; left: -50%; transform: rotate(-45deg); display: none; box-shadow: 0 0 30px #fff; z-index: 60; }
+
+        /* UI */
+        #hud { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 24px; color: var(--gold); z-index: 10; text-shadow: 0 0 10px #000; }
+        #result-modal { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.95); border: 2px solid var(--gold); padding: 50px; 
+            text-align: center; display: none; z-index: 200; width: 80%;
+        }
+        .btn { background: var(--red); color: white; padding: 15px 40px; border: 2px solid var(--gold); font-size: 20px; cursor: pointer; margin-top: 20px; text-transform: uppercase; font-weight: bold; }
+        
+        .win-txt { font-size: 100px; color: var(--gold); text-shadow: 0 0 30px var(--red); animation: bounce 0.5s infinite alternate; }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="char-select-screen" style="text-align: center;">
-        <h2>SELECT YOUR CLAN</h2>
-        <div id="char-select">
-            <div class="char-box" onclick="startGame('NINJA A')">NINJA A</div>
-            <div class="char-box" onclick="startGame('SAMURAI A')">SAMURAI A</div>
-            <div class="char-box" onclick="startGame('GEISHA A')">GEISHA A</div>
-            <div class="char-box" onclick="startGame('SHINOBI B')">SHINOBI B</div>
-            <div class="char-box" onclick="startGame('SAMURAI B')">SAMURAI B</div>
-            <div class="char-box" onclick="startGame('KIMONO B')">KIMONO B</div>
-            <div class="char-box" onclick="startGame('MECHA')">MECHA</div>
-            <div class="char-box" onclick="startGame('CYBER')">CYBER</div>
-        </div>
+<div id="game-arena">
+    <div id="hud">STREAK: <span id="streak">0</span></div>
+
+    <div id="menu">
+        <h1 style="color: var(--gold); margin:0;">ZAN: CLAN WARS</h1>
+        <p style="letter-spacing: 3px;">SPATIAL ARENA PRE-RELEASE</p>
+        <div class="grid" id="char-grid"></div>
+        <p style="font-size: 12px; color: #888;">BEAT THE AI AT 0.250s REACTION</p>
     </div>
 
-    <div id="battle-screen" style="display:none; width:100%; height:100%;">
-        <div id="player" class="character">PLAYER</div>
-        <div id="enemy" class="character">CPU</div>
-        <div id="ui-layer">
-            <div id="signal">斬</div>
-            <div id="result">
-                <div id="result-text"></div>
-                <div id="result-time"></div>
-                <br>
-                <button onclick="resetGame()">NEXT MATCH</button>
-            </div>
-        </div>
-        <div class="flash" id="flash"></div>
+    <div id="battle">
+        <div class="slash-vfx" id="vfx"></div>
+        <img id="p-img" class="fighter" src="" alt="">
+        <img id="e-img" class="fighter" src="" alt="">
+        <div id="signal">斬</div>
+    </div>
+
+    <div id="result-modal">
+        <div id="res-msg"></div>
+        <div id="res-time" style="font-size: 24px; color: var(--gold); margin: 20px 0;"></div>
+        <button class="btn" onclick="location.reload()">REMATCH</button>
     </div>
 </div>
 
+<audio id="s-draw" src="https://assets.mixkit.co/active_storage/sfx/2006/2006-preview.mp3"></audio>
+<audio id="s-slash" src="https://assets.mixkit.co/active_storage/sfx/1148/1148-preview.mp3"></audio>
+<audio id="s-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
 <script>
-    let startTime, canZan = false, cpuSpeed = 250; // 0.25秒
-    let gameActive = false;
-
-    function startGame(clan) {
-        document.getElementById('char-select-screen').style.display = 'none';
-        document.getElementById('battle-screen').style.display = 'block';
-        resetRound();
-    }
-
-    function resetRound() {
-        canZan = false;
-        gameActive = true;
-        document.getElementById('signal').style.display = 'none';
-        document.getElementById('result').style.display = 'none';
-        
-        // 2秒から5秒の間でランダムに合図
-        const delay = Math.random() * 3000 + 2000;
-        setTimeout(() => {
-            if(!gameActive) return;
-            showSignal();
-        }, delay);
-    }
-
-    function showSignal() {
-        canZan = true;
-        startTime = Date.now();
-        document.getElementById('signal').style.display = 'block';
-        
-        // CPUの反応予約
-        setTimeout(() => {
-            if(canZan) resolveGame("CPU");
-        }, cpuSpeed);
-    }
-
-    // 画面クリック時の判定
-    document.getElementById('game-container').addEventListener('mousedown', () => {
-        if(canZan) {
-            resolveGame("PLAYER");
-        } else if (gameActive && !document.getElementById('result').style.display.includes('block')) {
-            // お手付き
-            resolveGame("EARLY");
-        }
-    });
-
-    function resolveGame(winner) {
-        canZan = false;
-        gameActive = false;
-        const endTime = Date.now();
-        const reactionTime = endTime - startTime;
-        const flash = document.getElementById('flash');
-        
-        flash.style.opacity = "1";
-        setTimeout(() => flash.style.opacity = "0", 100);
-
-        const resultText = document.getElementById('result-text');
-        const resultTime = document.getElementById('result-time');
-        
-        if(winner === "PLAYER") {
-            resultText.innerHTML = "<span class='zan-text'>WIN (斬)</span>";
-            resultTime.innerText = "YOUR TIME: " + (reactionTime / 1000).toFixed(3) + "s";
-        } else if(winner === "CPU") {
-            resultText.innerHTML = "<span style='color:#666'>LOSE (無念)</span>";
-            resultTime.innerText = "CPU WAS FASTER (0.250s)";
-        } else {
-            resultText.innerHTML = "<span style='color:#f0f'>TOO EARLY (早まった)</span>";
-            resultTime.innerText = "CALM YOUR MIND";
-        }
-
-        document.getElementById('signal').style.display = 'none';
-        document.getElementById('result').style.display = 'block';
-    }
-
-    function resetGame() {
-        document.getElementById('char-select-screen').style.display = 'block';
-        document.getElementById('battle-screen').style.display = 'none';
-    }
-</script>
-</body>
-</html>
+    const chars = [
+        { name: "NINJA", url: "
