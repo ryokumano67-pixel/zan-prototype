@@ -9,46 +9,40 @@
         body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', serif; overflow: hidden; user-select: none; }
         #game-arena { position: relative; width: 100vw; height: 100vh; background: radial-gradient(circle, #001529, #000); overflow: hidden; }
         
-        /* 共通：スプライト画像の設定 */
         .char-sprite {
-            background-image: url('chars.jpg'); /* ここにアップロードした画像名 */
-            background-size: 400% 200%; /* 4列 2行 */
+            background-image: url('chars.jpg');
+            background-size: 400% 200%;
             background-repeat: no-repeat;
             display: inline-block;
         }
 
-        /* セレクト画面 */
         #menu { position: absolute; z-index: 100; text-align: center; background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--gold); width: 85%; max-width: 450px; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 10px; }
         .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
-        .card { width: 100%; aspect-ratio: 1/1.2; border: 1px solid #444; cursor: pointer; background: #111; overflow: hidden; position: relative; transition: 0.2s; }
-        .card:hover { border-color: var(--gold); transform: scale(1.05); }
-        .card .char-sprite { width: 100%; height: 100%; transform: scale(1.2); }
+        .card { width: 100%; aspect-ratio: 1/1.2; border: 1px solid #444; cursor: pointer; background: #111; overflow: hidden; transition: 0.2s; position: relative; }
+        .card .char-sprite { width: 100%; height: 100%; transform: scale(1.1); pointer-events: none; }
 
-        /* バトル画面 */
         #battle { display: none; width: 100%; height: 100%; position: relative; }
-        .fighter { position: absolute; bottom: 15%; width: 220px; height: 320px; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.2); z-index: 5; background-size: 400% 200%; }
-        #p-img { left: -70%; transform: scale(1.5); }
-        #e-img { right: -70%; transform: scale(1.5) scaleX(-1); }
+        .fighter { position: absolute; bottom: 15%; width: 220px; height: 320px; transition: 0.3s ease-out; z-index: 5; background-size: 400% 200%; }
+        #p-img { left: -70%; transform: scale(1.4); }
+        #e-img { right: -70%; transform: scale(1.4) scaleX(-1); }
 
-        /* 演出 */
-        #signal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--red); text-shadow: 0 0 30px #fff; display: none; z-index: 50; font-weight: bold; }
-        #hud { position: absolute; top: 10px; width: 100%; text-align: center; color: var(--gold); z-index: 10; font-size: 20px; font-weight: bold; text-shadow: 0 0 5px #000; }
+        #signal { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: var(--red); text-shadow: 0 0 30px #fff; display: none; z-index: 50; font-weight: bold; pointer-events: none; }
+        #hud { position: absolute; top: 10px; width: 100%; text-align: center; color: var(--gold); z-index: 10; font-size: 20px; font-weight: bold; }
         #result-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 2px solid var(--gold); padding: 30px; text-align: center; display: none; z-index: 200; width: 80%; }
-        .btn { background: var(--red); color: #fff; padding: 12px 30px; border: none; cursor: pointer; margin-top: 20px; font-weight: bold; font-size: 18px; }
+        .btn { background: var(--red); color: #fff; padding: 12px 30px; border: none; cursor: pointer; margin-top: 20px; font-weight: bold; }
 
-        /* 桜吹雪 */
         .sakura { position: absolute; background: #ffb7c5; border-radius: 50% 0 50% 50%; pointer-events: none; animation: fall linear infinite; z-index: 1; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
     </style>
 </head>
-<body onclick="initAudio()">
+<body>
 
 <div id="game-arena">
     <div id="hud">STREAK: <span id="streak">0</span></div>
 
     <div id="menu">
-        <h2 style="color: var(--gold); margin:0; letter-spacing: 2px;">ZAN: CLAN WARS</h2>
-        <p style="font-size: 11px; color: #888;">SELECT YOUR WARRIOR & TAP TO START</p>
+        <h2 style="color: var(--gold); margin:0;">ZAN: CLAN WARS</h2>
+        <p style="font-size: 11px; color: #888;">SELECT YOUR WARRIOR</p>
         <div class="grid" id="char-grid"></div>
     </div>
 
@@ -66,22 +60,22 @@
 </div>
 
 <script>
-    // 集合絵の座標マップ (4x2のグリッド)
     const spriteMap = [
         {x: '0%', y: '0%'}, {x: '33.3%', y: '0%'}, {x: '66.6%', y: '0%'}, {x: '100%', y: '0%'},
         {x: '0%', y: '100%'}, {x: '33.3%', y: '100%'}, {x: '66.6%', y: '100%'}, {x: '100%', y: '100%'}
     ];
 
+    // 音声ファイルの定義
     const sDraw = new Audio("https://www.soundjay.com/misc/sounds/sword-drawn-1.mp3");
     const sSlash = new Audio("https://www.soundjay.com/misc/sounds/sword-clash-1.mp3");
     const sWin = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
 
-    function initAudio() {
-        [sDraw, sSlash, sWin].forEach(s => { s.play().then(()=>s.pause()).catch(()=>{}); });
-    }
+    let streak = parseInt(localStorage.getItem('zanStreak') || 0);
+    document.getElementById('streak').innerText = streak;
+    let startTime, canZan = false, gameActive = false;
 
     // 桜吹雪
-    for(let i=0; i<20; i++){
+    for(let i=0; i<15; i++){
         let s = document.createElement('div');
         s.className = 'sakura';
         s.style.left = Math.random()*100+'vw';
@@ -95,13 +89,21 @@
         let d = document.createElement('div');
         d.className = 'card';
         d.innerHTML = `<div class="char-sprite" style="background-position: ${pos.x} ${pos.y}"></div>`;
-        d.onclick = (e) => { e.stopPropagation(); startBattle(pos); };
+        // クリックイベントで音を解禁しつつバトル開始
+        d.addEventListener('click', (e) => {
+            e.stopPropagation();
+            unlockAudio();
+            startBattle(pos);
+        });
         grid.appendChild(d);
     });
 
-    let streak = parseInt(localStorage.getItem('zanStreak') || 0);
-    document.getElementById('streak').innerText = streak;
-    let startTime, canZan = false, gameActive = false;
+    // iOS/Android向け音声を「解禁」する関数
+    function unlockAudio() {
+        sDraw.play().then(() => sDraw.pause());
+        sSlash.play().then(() => sSlash.pause());
+        sWin.play().then(() => sWin.pause());
+    }
 
     function startBattle(playerPos) {
         document.getElementById('menu').style.display = 'none';
@@ -116,28 +118,37 @@
 
         gameActive = true;
         
+        // 登場
         setTimeout(() => {
             pImg.style.left = '5%';
             eImg.style.right = '5%';
-            sDraw.play();
-        }, 300);
+            sDraw.play().catch(e => console.log("Audio play failed", e));
+        }, 500);
 
+        // 合図
         setTimeout(() => {
             if(!gameActive) return;
             canZan = true;
             startTime = Date.now();
             document.getElementById('signal').style.display = 'block';
-            setTimeout(() => { if(canZan) resolve("CPU"); }, 250); // CPUの反応速度 0.25秒
+            setTimeout(() => { if(canZan) resolve("CPU"); }, 250);
         }, Math.random()*2000 + 2500);
     }
 
-    document.getElementById('game-arena').onmousedown = handleInput;
-    document.getElementById('game-arena').ontouchstart = (e) => { e.preventDefault(); handleInput(); };
+    // タップ判定の登録を強化
+    const arena = document.getElementById('game-arena');
+    arena.addEventListener('mousedown', handleInput);
+    arena.addEventListener('touchstart', (e) => {
+        if(gameActive) {
+            e.preventDefault();
+            handleInput();
+        }
+    });
 
     function handleInput() {
         if(!gameActive) return;
         if(canZan) resolve("PLAYER");
-        else if(document.getElementById('battle').style.display === 'block') resolve("EARLY");
+        else if(document.getElementById('battle').style.display === 'block' && !canZan) resolve("EARLY");
     }
 
     function resolve(winner) {
@@ -147,26 +158,26 @@
         document.getElementById('signal').style.display = 'none';
         
         if(winner !== "EARLY") {
-            sSlash.play();
-            document.getElementById('p-img').style.left = '40%';
-            document.getElementById('e-img').style.right = '40%';
+            sSlash.play().catch(e => console.log(e));
+            document.getElementById('p-img').style.left = '45%';
+            document.getElementById('e-img').style.right = '45%';
         }
 
         setTimeout(() => {
             document.getElementById('result-modal').style.display = 'block';
             if(winner === "PLAYER") {
                 streak++;
-                sWin.play();
-                document.getElementById('res-msg').innerHTML = "<h1 style='color:var(--gold); font-size:60px; margin:0;'>VICTORY</h1>";
+                sWin.play().catch(e => console.log(e));
+                document.getElementById('res-msg').innerHTML = "<h1 style='color:var(--gold); font-size:50px;'>VICTORY</h1>";
                 document.getElementById('res-time').innerText = (time/1000).toFixed(3) + "s";
             } else {
                 streak = 0;
-                document.getElementById('res-msg').innerHTML = "<h1 style='color:#888; margin:0;'>DEFEATED</h1>";
-                document.getElementById('res-time').innerText = winner === "CPU" ? "AI: 0.250s" : "TOO FAST";
+                document.getElementById('res-msg').innerHTML = "<h1 style='color:#888;'>DEFEATED</h1>";
+                document.getElementById('res-time').innerText = winner === "CPU" ? "AI: 0.250s" : "TOO EARLY";
             }
             localStorage.setItem('zanStreak', streak);
             document.getElementById('streak').innerText = streak;
-        }, 600);
+        }, 800);
     }
 </script>
 </body>
